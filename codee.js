@@ -1,14 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEYS = {
-    header: "es_header_state",
-    history: "es_call_history",
-  };
-
-  const DEFAULT_HEADER_STATE = {
-    likes: 0,
-    coins: 100,
-    copies: 0,
-  };
+  const STORAGE_KEYS = { header: "es_header_state", history: "es_call_history" };
+  const DEFAULT_HEADER_STATE = { likes: 0, coins: 100, copies: 0 };
 
   const nav = performance.getEntriesByType("navigation")[0];
   const isReload = nav ? nav.type === "reload" : performance.navigation.type === 1;
@@ -28,80 +20,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const readHeaderState = () => {
     try {
-      return (
-        JSON.parse(localStorage.getItem(STORAGE_KEYS.header)) ||
-        { ...DEFAULT_HEADER_STATE }
-      );
-    } catch {
-      return { ...DEFAULT_HEADER_STATE };
-    }
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.header)) || { ...DEFAULT_HEADER_STATE };
+    } catch { return { ...DEFAULT_HEADER_STATE }; }
   };
-
-  const saveHeaderState = (state) =>
-    localStorage.setItem(STORAGE_KEYS.header, JSON.stringify(state));
+  const saveHeaderState = (s) => localStorage.setItem(STORAGE_KEYS.header, JSON.stringify(s));
 
   const readHistory = () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.history)) || [];
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.history)) || []; }
+    catch { return []; }
   };
+  const saveHistory = (items) => localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(items));
 
-  const saveHistory = (items) =>
-    localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(items));
-
-  const updateHeaderCounters = (state) => {
-    if (likeCountText) likeCountText.textContent = state.likes;
-    if (coinCountText) coinCountText.textContent = state.coins;
-    if (copyCountText) copyCountText.textContent = state.copies;
+  const updateHeaderCounters = (s) => {
+    if (likeCountText) likeCountText.textContent = s.likes;
+    if (coinCountText) coinCountText.textContent = s.coins;
+    if (copyCountText) copyCountText.textContent = s.copies;
   };
 
   const nowTime = () =>
-    new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const renderHistory = (items) => {
     if (!historyList) return;
     historyList.innerHTML = "";
-    [...items]
-      .reverse()
-      .forEach(({ title, number, time }) => {
-        const row = document.createElement("div");
-        row.className =
-          "flex items-start justify-between rounded-xl border border-gray-100 bg-white px-3 py-3";
-        row.innerHTML = `
-          <div>
-            <div class="text-sm font-semibold text-gray-800">${title}</div>
-            <div class="text-xs text-gray-500">${number}</div>
-          </div>
-          <div class="text-xs text-gray-500">${time}</div>
-        `;
-        historyList.appendChild(row);
-      });
+    [...items].reverse().forEach(({ title, number, time }) => {
+      const row = document.createElement("div");
+      row.className = "flex items-start justify-between rounded-xl border border-gray-100 bg-white px-3 py-3";
+      row.innerHTML = `
+        <div>
+          <div class="text-sm font-semibold text-gray-800">${title}</div>
+          <div class="text-xs text-gray-500">${number}</div>
+        </div>
+        <div class="text-xs text-gray-500">${time}</div>`;
+      historyList.appendChild(row);
+    });
   };
 
   const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      const temp = document.createElement("textarea");
-      temp.value = text;
-      document.body.appendChild(temp);
-      temp.select();
-      try {
-        document.execCommand("copy");
-        document.body.removeChild(temp);
-        return true;
-      } catch {
-        document.body.removeChild(temp);
-        return false;
-      }
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch {
+      const t = document.createElement("textarea");
+      t.value = text; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); document.body.removeChild(t); return true; }
+      catch { document.body.removeChild(t); return false; }
     }
+  };
+
+  // Helper: read metadata from a specific card right when clicked
+  const getMeta = (card) => {
+    const title = (card.dataset.title || card.querySelector("h3")?.textContent || "Service").trim();
+    const number = (card.dataset.number || card.querySelector(".number")?.textContent || "").trim();
+    return { title, number };
   };
 
   let headerState = readHeaderState();
@@ -123,24 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
       headerState.copies += 1;
       saveHeaderState(headerState);
       updateHeaderCounters(headerState);
-      alert(
-        copied
-          ? "Referral code copied! (EMERGENCY-HELP-2025)"
-          : "Couldn't copy automatically. Please copy manually."
-      );
+      alert(copied ? "Referral code copied! (EMERGENCY-HELP-2025)" : "Couldn't copy automatically. Please copy manually.");
     });
   }
 
   document.querySelectorAll(".service-card").forEach((card) => {
-    const title =
-      card.dataset.title ||
-      card.querySelector("h3")?.textContent?.trim() ||
-      "Service";
-    const number =
-      card.dataset.number ||
-      card.querySelector(".number")?.textContent?.trim() ||
-      "";
-
     const heartButton = card.querySelector('[aria-label="Favorite"]');
     if (heartButton) {
       heartButton.addEventListener("click", () => {
@@ -153,15 +109,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const copyBtn = card.querySelector(".copy-btn");
     if (copyBtn) {
       copyBtn.addEventListener("click", async () => {
+        const { number } = getMeta(card);
         const ok = await copyToClipboard(number);
         headerState.copies += 1;
         saveHeaderState(headerState);
         updateHeaderCounters(headerState);
-        alert(
-          ok
-            ? `Hotline ${number} copied!`
-            : "Couldn't copy automatically. Please copy the number manually."
-        );
+        alert(ok ? `Hotline ${number} copied!` : "Couldn't copy automatically. Please copy the number manually.");
       });
     }
 
@@ -172,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Not enough coins to place a call. You need at least 20 coins.");
           return;
         }
+        const { title, number } = getMeta(card);
         alert(`Calling ${title} (${number})`);
         headerState.coins -= 20;
         if (headerState.coins < 0) headerState.coins = 0;
