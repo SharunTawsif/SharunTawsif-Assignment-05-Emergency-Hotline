@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Helper: read metadata from a specific card right when clicked
+
   const getMeta = (card) => {
     const title = (card.dataset.title || card.querySelector("h3")?.textContent || "Service").trim();
     const number = (card.dataset.number || card.querySelector(".number")?.textContent || "").trim();
